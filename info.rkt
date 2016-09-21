@@ -1,8 +1,16 @@
 #lang info
 (define collection "xlist")
 (define deps '("base"
-               "rackunit-lib"))
-(define build-deps '("scribble-lib" "racket-doc"))
+               "rackunit-lib"
+               "mutable-match-lambda"
+               "scribble-enhanced"
+               "multi-id"
+               "type-expander"
+               "typed-racket-lib"))
+(define build-deps '("scribble-lib"
+                     "racket-doc"
+                     "typed-racket-doc"
+                     "scribble-math"))
 (define scribblings '(("scribblings/xlist.scrbl" ())))
 (define pkg-desc "Description Here")
 (define version "0.0")

@@ -6,4 +6,4 @@
 xlist
 =====
 
-Fancy lists, with bounded or unbounded repetition of elements. Can be used as a type, match pattern or to create instances.
+Fancy lists, with bounded or unbounded repetition of elements. Can be used as a type or match pattern.
