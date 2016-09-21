@@ -191,8 +191,11 @@ To use the type expander, you must first require the
 
  @emph{Note :} Typed/Racket's type inference is not strong enough (yet) to
  support some match patterns, and there is no @elem[#:style 'tt "typed/match"]
- library which would help with that (yet). This means that some of the patterns
- supported by @racket[xlist] will not work in typed/racket.}
+ library which would help with that (yet). This means that although by
+ construction @racket[xlist] tries to avoid to generate such patterns, a few of
+ the patterns supported by @racket[xlist] will not work in
+ @racketmodname[typed/racket] (rest values and spliced lists are the most likely
+ to cause problems).}
 
 @include-section{xlist-untyped.scrbl}
 @include-section{identifiers.scrbl}

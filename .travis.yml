@@ -52,7 +52,7 @@ script:
  - raco test -x -p xlist
  - raco setup --check-pkg-deps --pkgs xlist
  - raco pkg install --deps search-auto doc-coverage
- - raco doc-coverage xlist
+ #- raco doc-coverage xlist # Needs scribble patch for issue 44
 
 after_success:
  - raco pkg install --deps search-auto cover cover-coveralls
