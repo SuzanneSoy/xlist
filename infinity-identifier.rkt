@@ -1,6 +1,5 @@
-#lang racket/base
+#lang typed/racket/base
+
 (provide ∞)
 
-(require (for-syntax racket/base))
-
-(define ∞ +inf.0)
+(define ∞ : +inf.0 +inf.0)

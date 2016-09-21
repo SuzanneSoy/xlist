@@ -182,17 +182,17 @@ To use the type expander, you must first require the
 
  @racketblock[
  (xlist number?³⁻⁵ ,@(list-no-order number? string?) symbol?⁺)
- (append (and (list number? ...) (app length (between/c 3 5)))
+ (append (and (list number? ...) (app length (? (between/c 3 5))))
          (list-no-order number? string?)
          (list symbol? ..1))]
 
  Applying a repeat indicator on a splice is not supported yet, i.e.
- @racket[(xlist ,@(list-no-order number? string?)⁵)] will not work.}
+ @racket[(xlist ,@(list-no-order number? string?)⁵)] will not work.
 
-@defidform[^]{This identifier can only be used within xlist forms.}
-@defthing[∞]{This identifier is meant to be used within xlist
- forms, but is also equal to @racket[+inf.0] as a convenience. In the future,
- this package will make it possible for other packages to overload the meaning
- of the @racket[^] and @racket[∞] identifiers, so that the value of @racket[∞]
- may depend on the packages loaded (for example a symbolic math package may want
- to attach a special value to @racket[∞].}
+ @emph{Note :} Typed/Racket's type inference is not strong enough (yet) to
+ support some match patterns, and there is no @elem[#:style 'tt "typed/match"]
+ library which would help with that (yet). This means that some of the patterns
+ supported by @racket[xlist] will not work in typed/racket.}
+
+@include-section{xlist-untyped.scrbl}
+@include-section{identifiers.scrbl}

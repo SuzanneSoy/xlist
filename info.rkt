@@ -7,12 +7,14 @@
                "multi-id"
                "type-expander"
                "typed-racket-lib"
-               "typed-racket-more"))
+               "typed-racket-more"
+               "phc-toolkit"
+               "reprovide-lang"
+               "match-string"))
 (define build-deps '("scribble-lib"
                      "racket-doc"
                      "typed-racket-doc"
-                     "scribble-math"
-                     "match-string"))
+                     "scribble-math"))
 (define scribblings '(("scribblings/xlist.scrbl" ())))
 (define pkg-desc "Description Here")
 (define version "0.0")

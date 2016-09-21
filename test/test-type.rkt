@@ -63,9 +63,9 @@
  (ann '(1 1 1) (xlist Number ^ *))
 
  ; NOT (ann '() (xlist Number ^ +))
- (ann '(1) (xlist 1 ^ +))
- (ann '(1 1) (xlist 1 ^ +))
- (ann '(1 1 1) (xlist 1 ^ +))
+ (ann '(1) (xlist Number ^ +))
+ (ann '(1 1) (xlist Number ^ +))
+ (ann '(1 1 1) (xlist Number ^ +))
  (void))
 
 (test-begin
