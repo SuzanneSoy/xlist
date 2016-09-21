@@ -1,11 +1,10 @@
 xlist
-Copyright (c) 2016 georges
+Copyright (c) 2016 Georges Dupéron
 
-This package is distributed under the GNU Lesser General Public
-License (LGPL).  This means that you can link xlist into proprietary
-applications, provided you follow the rules stated in the LGPL.  You
-can also modify this package; if you distribute a modified version,
-you must distribute it under the terms of the LGPL, which in
-particular means that you must release the source code for the
-modified software.  See http://www.gnu.org/copyleft/lesser.html
-for more information.
+This package is distributed in the public domain.
+
+Some legislations do not recognize dedications to the public domain.
+To circumvent such issues, you are also allowed to use this software
+under the GNU Lesser General Public License (LGPL), or, at your option,
+under a BSD licence, or, at your option, under the WTFPL, or, at your
+option, under any combination of these licenses.
