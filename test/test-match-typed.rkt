@@ -1,8 +1,7 @@
 #lang typed/racket
 
 (require xlist/untyped
-         typed/rackunit
-         "ck.rkt")
+         typed/rackunit)
 
 (define-syntax-rule (check-match v clause result)
   (check-equal? (let ([no-match (gensym 'no-match)])
