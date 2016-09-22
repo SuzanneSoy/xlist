@@ -112,6 +112,16 @@
  (void))
 
 (test-begin
+ "(xlist Number ^ x)"
+ (ann '() (xlist Number ^ 0))
+ (ann '(1) (xlist Number ^ 1))
+ (ann '(1 1) (xlist Number ^ 2))
+ (ann '(1 1 1) (xlist Number ^ 3))
+ (ann '(1 1 1 1) (xlist Number ^ 4))
+ (ann '(1 1 1 1 1) (xlist Number ^ 5))
+ (void))
+
+(test-begin
  "(xlist Number ^ x - y)"
  (ann '() (xlist Number ^ -))
  (ann '(1 1 1) (xlist Number ^ -))

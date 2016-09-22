@@ -41,10 +41,11 @@ To use the type expander, you must first require the
                      (code:line number +)
                      (code:line +)
                      (code:line number - number)
-                     (code:line number -)
                      (code:line number - ∞)
+                     (code:line number -)
                      (code:line - number)
                      (code:line -)
+                     (code:line - ∞)
                      (code:line *))]]]]{
  The notation @racket[type ^ _n], where @racket[_n] is a number, indicates that
  the given type should be repeated @racket[_n] times within the list. Therefore,
@@ -147,9 +148,10 @@ To use the type expander, you must first require the
                    (code:line number +)
                    (code:line +)
                    (code:line number - number)
-                   (code:line number -)
                    (code:line number - ∞)
+                   (code:line number -)
                    (code:line - number)
+                   (code:line - ∞)
                    (code:line -)
                    (code:line *)
                    (code:line ...)
@@ -196,6 +198,72 @@ To use the type expander, you must first require the
  the patterns supported by @racket[xlist] will not work in
  @racketmodname[typed/racket] (rest values and spliced lists are the most likely
  to cause problems).}
+
+@;{This is completely wrong.
+ @defform*[#:link-target? #f
+ #:literals (^ *)
+ [(xlist τᵢ … maybe-τⱼ τₖ … maybe-τₙ)
+  (xlist τᵢ … τₘᵥ)]
+ #:grammar
+ [(τᵢ type
+      fixed-repeated-type)
+  (τₘᵥ mandatory-variadic-repeated-type)
+  (maybe-τⱼ (code:line)
+            mandatory-bounded-variadic-repeated-type)
+  (τₖ optional-bounded-variadic-repeated-type)
+  (maybe-τₙ (code:line)
+            optional-variadic-repeated-type)
+  (fixed-repeated-type
+   (code:line type ^ fixed-repeat)
+   (code:line type ^ {fixed-repeat})
+   (code:line type {fixed-repeat})
+   (code:line type superscripted-fixed-repeat)
+   (code:line superscripted-fixed-id))
+  (mandatory-bounded-variadic-repeated-type
+   (code:line type ^ mandatory-bounded-variadic-repeat)
+   (code:line type ^ {mandatory-bounded-variadic-repeat})
+   (code:line type {mandatory-bounded-variadic-repeat})
+   (code:line type superscripted-mandatory-bounded-variadic-repeat)
+   (code:line superscripted-mandatory-bounded-variadic-id))
+  (optional-bounded-variadic-repeated-type
+   (code:line type ^ optional-bounded-variadic-repeat)
+   (code:line type ^ {optional-bounded-variadic-repeat})
+   (code:line type {optional-bounded-variadic-repeat})
+   (code:line type superscripted-optional-bounded-variadic-repeat)
+   (code:line superscripted-optional-bounded-variadic-id))
+  (mandatory-variadic-repeated-type
+   (code:line type ^ mandatory-variadic-repeat)
+   (code:line type ^ {mandatory-variadic-repeat})
+   (code:line type {mandatory-variadic-repeat})
+   (code:line type superscripted-mandatory-variadic-repeat)
+   (code:line superscripted-mandatory-variadic-id)
+   (code:line type +))
+  (optional-variadic-repeated-type
+   (code:line type ^ optional-variadic-repeat)
+   (code:line type ^ {optional-variadic-repeat})
+   (code:line type {optional-variadic-repeat})
+   (code:line type superscripted-optional-variadic-repeat)
+   (code:line superscripted-optional-variadic-id)
+   (code:line type *))
+  (fixed-repeat (code:line number)
+                (code:line from - to (code:comment "from = to")))
+  (mandatory-bounded-variadic-repeat (code:line number - number))
+  (optional-bounded-variadic-repeat (code:line 0 - number)
+                                    (code:line - number))
+  (mandatory-variadic-repeat (code:line number +)
+                             (code:line +)
+                             (code:line number -)
+                             (code:line number - ∞))
+  (optional-variadic-repeat (code:line 0 - ∞)
+                            (code:line 0 -)
+                            (code:line - ∞)
+                            (code:line -)
+                            (code:line *))]]{
+                                    
+  Macro form which returns a builder function for a list with the given type.
+  The simplified syntax compared to @racket[xList] is due to the fact that there
+  are some function types that Typed/Racket cannot express (yet).}
+}
 
 @include-section{xlist-untyped.scrbl}
 @include-section{identifiers.scrbl}
