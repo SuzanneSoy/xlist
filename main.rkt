@@ -135,8 +135,8 @@
                #:when normal
                #:with (expanded …) (cons #'base normal)))
 
-    (define-syntax-class not-stx-list
-      (pattern {~not (_ …)}))
+    (define-syntax-class not-stx-pair
+      (pattern {~not (_ . _)}))
 
     (define-syntax-class base
       #:literals (^ + *)
@@ -176,7 +176,7 @@
           #:literals (^ * + - ∞ stop)
           [()
            #'Null]
-          [rest:not-stx-list
+          [rest:not-stx-pair
            #'rest]
           [(#:rest rest)
            #'rest]
@@ -240,7 +240,7 @@
           #:literals (^ * + - ∞ stop)
           [()
            #'(list)]
-          [rest:not-stx-list
+          [rest:not-stx-pair
            #'rest]
           [(#:rest rest)
            #'rest]
