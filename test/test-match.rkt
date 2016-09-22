@@ -20,6 +20,22 @@
   (check-false (match v [pat #t] [_ #f])))
 
 (test-begin
+ "(xlist . single-pat)"
+ ;; Need a not-yet-accepted PR in Racket.
+ ;(check-match? '() (xlist . null?))
+ ;(check-match? '1 (xlist . 1))
+ ;(check-match? '1 (xlist . number?))
+ (void))
+
+(test-begin
+ "(xlist #:rest . pat)"
+ (check-match '()      [(xlist #:rest (? null? v))   v]                                 '())
+ (check-match '1       [(xlist #:rest (and 1 v))     v]                                 1)
+ (check-match '1       [(xlist #:rest (? number? v)) v]                                 1)
+ (check-match #(1 "b") [(xlist #:rest (vector (? number? n) (? string? s))) (cons n s)] '(1 . "b"))
+ (void))
+
+(test-begin
  "(xlist 1 2 3 4 5)"
  (check-match?       '()          (xlist))
  (check-match?       '(1)         (xlist 1))

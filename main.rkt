@@ -178,6 +178,8 @@
            #'Null]
           [rest:not-stx-list
            #'rest]
+          [(#:rest rest)
+           #'rest]
           [(stop . rest) ;; eliminate the private marker
            (xl #'rest)]
           [(s:with-superscripts . rest)
@@ -239,6 +241,8 @@
           [()
            #'(list)]
           [rest:not-stx-list
+           #'rest]
+          [(#:rest rest)
            #'rest]
           [(stop . rest) ;; eliminate the private marker
            (xl #'rest)]

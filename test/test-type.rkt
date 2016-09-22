@@ -4,6 +4,25 @@
          type-expander
          typed/rackunit)
 
+(define-type VectorNS (Vector Number String))
+
+(test-begin
+ "(xlist . single-type)"
+ (ann '() (xlist . Null))
+ (ann '1 (xlist . 1))
+ (ann '1 (xlist . Number))
+ (ann #(1 "b") (xlist . VectorNS))
+ (void))
+
+(test-begin
+ "(xlist #:rest . type)"
+ (ann '() (xlist #:rest Null))
+ (ann '1 (xlist #:rest 1))
+ (ann '1 (xlist #:rest Number))
+ (ann #(1 "b") (xlist #:rest (Vector Number String)))
+ (void))
+
+
 (test-begin
  "(xlist 1 2 3 4 5)"
  (ann '() (xlist))

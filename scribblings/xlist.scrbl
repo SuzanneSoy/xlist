@@ -21,12 +21,13 @@ To use the type expander, you must first require the
 
 @deftogether[
  [@defform*[#:kind "type-expander"
-            [(xList τᵢ …)
-             (xList τᵢ … . rest)]]
+            [(xList τᵢ ...)
+             (xList τᵢ ... . rest)
+             (xList τᵢ ... #:rest . rest)]]
   @defform*[#:kind "type-expander"
             #:literals (^ *)
-            [(xlist τᵢ …)
-             (xlist τᵢ … . rest)]
+            [(xlist τᵢ ...)
+             (xlist τᵢ ... . rest)]
             #:grammar
             [(τᵢ type
                  repeated-type)
@@ -130,7 +131,8 @@ To use the type expander, you must first require the
           #:link-target? #f
           #:literals (^ *)
           [(xlist patᵢ ...)
-           (xlist patᵢ ... . rest)]
+           (xlist patᵢ ... . rest)
+           (xList patᵢ ... #:rest . rest)]
           #:grammar
           [(patᵢ pattern-or-spliced
                  repeated-pattern
@@ -202,8 +204,8 @@ To use the type expander, you must first require the
 @;{This is completely wrong.
  @defform*[#:link-target? #f
  #:literals (^ *)
- [(xlist τᵢ … maybe-τⱼ τₖ … maybe-τₙ)
-  (xlist τᵢ … τₘᵥ)]
+ [(xlist τᵢ ... maybe-τⱼ τₖ ... maybe-τₙ)
+  (xlist τᵢ ... τₘᵥ)]
  #:grammar
  [(τᵢ type
       fixed-repeated-type)
