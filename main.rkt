@@ -2,7 +2,8 @@
 
 (require phc-toolkit/typed-untyped)
 (define-typed/untyped-modules #:no-test
-  (require (only-in type-expander define-type-expander)
+  (require racket/require
+           (only-in type-expander define-type-expander)
            multi-id
            "caret-identifier.rkt"
            "infinity-identifier.rkt"
@@ -25,8 +26,9 @@
                        (rename-in syntax/parse
                                   [...+ …+])
                        syntax/parse/experimental/template
-                       syntax/stx
-                       type-expander/expander)
+                       (subtract-in syntax/stx phc-toolkit/untyped)
+                       type-expander/expander
+                       phc-toolkit/untyped)
            (for-meta 2 racket/base)
            (for-meta 2 syntax/parse))
 
@@ -49,14 +51,7 @@
     (define */rx #px"^(.*?)⃰$")
     (define +/rx #px"^(.*?)([⁰¹²³⁴⁵⁶⁷⁸⁹]*)⁺$")
     (define -/rx #px"^(.*?)([⁰¹²³⁴⁵⁶⁷⁸⁹]*)⁻([⁰¹²³⁴⁵⁶⁷⁸⁹]*)$")
-  
-    (define (regexp-match/c rx)
-      (and/c string? (λ (s) (regexp-match? rx s))))
-  
-    (define (id/c id)
-      (and/c identifier? (λ (i) (free-identifier=? i id))))
-
-  
+    
     (define string-superscript-number/c (regexp-match/c number/rx))
     (define string-superscript-*/c      (regexp-match/c */rx))
     (define string-superscript-+/c      (regexp-match/c +/rx))
