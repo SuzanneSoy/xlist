@@ -132,7 +132,7 @@ To use the type expander, you must first require the
           #:literals (^ *)
           [(xlist patᵢ ...)
            (xlist patᵢ ... . rest)
-           (xList patᵢ ... #:rest . rest)]
+           (xlist patᵢ ... #:rest . rest)]
           #:grammar
           [(patᵢ pattern-or-spliced
                  repeated-pattern
@@ -266,6 +266,13 @@ To use the type expander, you must first require the
   The simplified syntax compared to @racket[xList] is due to the fact that there
   are some function types that Typed/Racket cannot express (yet).}
 }
+
+@defproc[(normalize-xlist-type [stx syntax?] [context syntax?]) syntax?]{
+ Normalizes the xlist type. The normalized form has one type followed by ^
+ followed by a repeat within braces (possibly {1}) for each position in the
+ original type. It always finishes with #:rest rest-type. This function also
+ performs a few simplifications on the type, like transforming @racket[^ {3 -}]
+ into @racket[^ {3 +}], and transforming @racket[^ {0 -}] into @racket[^ {*}].}
 
 @include-section{xlist-untyped.scrbl}
 @include-section{identifiers.scrbl}

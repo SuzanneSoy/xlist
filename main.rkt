@@ -10,7 +10,7 @@
            "between.rkt"
            match-string
            racket/match
-           (only-in phc-toolkit/typed-untyped when-typed)
+           (only-in phc-toolkit/typed-untyped if-typed when-typed)
            (only-in syntax/parse ...+)
            (for-syntax (rename-in racket/base
                                   [* mul]
@@ -28,11 +28,12 @@
                        syntax/parse/experimental/template
                        (subtract-in syntax/stx phc-toolkit/untyped)
                        type-expander/expander
-                       phc-toolkit/untyped)
+                       phc-toolkit/untyped
+                       racket/pretty)
            (for-meta 2 racket/base)
            (for-meta 2 syntax/parse))
 
-  (provide xlist ^ ∞)
+  (provide xlist ^ ∞ (for-syntax normalize-xlist-type))
 
   (define-syntax stop
     (λ (stx) (raise-syntax-error 'stop "This is a private marker" stx)))
@@ -43,8 +44,8 @@
        (λ (stx)
          (syntax-case stx ()
            [(_ pat ...)
-            #`{~or {~seq #,(syntax-local-introduce #'^) pat ...}
-                   {~seq {~optional #,(syntax-local-introduce #'^)}
+            #`{~or {~seq {~literal #,(syntax-local-introduce #'^)} pat ...}
+                   {~seq {~optional {~literal #,(syntax-local-introduce #'^)}}
                          (pat ...)}}]))))
     
     (define number/rx #px"^(.*?)([⁰¹²³⁴⁵⁶⁷⁸⁹]+)$")
@@ -179,42 +180,85 @@
            (xl #'rest)]
           [(s:with-superscripts . rest)
            (xl #'(s.expanded … . rest))]
-          [(:base {~optional ^} *)
+          [(:base {~or * {~^ *}})
            #'(Listof base)]
-          [(:base {~optional ^} * . rest)
+          [(:base {~or * {~^ *}} . rest)
            #:with R (gensym 'R)
            #`(Rec R (U (Pairof base R)
                        #,(xl #'rest)))]
-          [(:base {~optional ^} + . rest)
+          [(:base {~or + {~^ +}} . rest)
            (xl #'(base ^ 1 + . rest))]
-          [(:base ^ power:nat + . rest)
+          [(:base {~^ power:nat +} . rest)
            (xl #'(base ^ power stop base * . rest))]
-          [(:base ^ - . rest)
-           (xl #'(base ^ 0 - . rest))]
-          [(:base ^ from:nat - ∞ . rest)
+          [(:base {~^ -} . rest) ;; TODO: if there was ^ {-}, then it should keep the braces because the next thing may be a number
+           (xl #'(base {~^ 0 -} . rest))]
+          [(:base {~^ from:nat - ∞} . rest)
            (xl #'(base ^ from + . rest))]
-          [(:base ^ 0 - to:nat . rest)
+          [(:base {~^ 0 - to:nat} . rest)
            #`(U . #,(foldl (λ (iteration u*)
                              (syntax-case u* ()
                                [[(_ . base…rest) . _]
                                 #`[(List* base . base…rest) . #,u*]]))
                            #`[(List* #,(xl #'rest))]
                            (range (syntax-e #'to))))]
-          [(:base ^ from:nat - to:nat . rest)
+          [(:base {~^ from:nat - to:nat} . rest)
            #:with difference (- (syntax-e #'to) (syntax-e #'from))
            (when (< (syntax-e #'difference) 0)
              (raise-syntax-error 'xlist
                                  "invalid range: m is larger than n"
                                  #'-))
            (xl #'(base ^ from stop base ^ 0 - difference . rest))]
-          [(:base ^ from:nat - . rest)
+          [(:base {~^ from:nat -} . rest)
            ;; "-" is not followed by a number, nor by ∞, so default to ∞.
            (xl #'(base ^ from - ∞ . rest))]
           [(e:fixed-repeat . rest)
            #`(List* e.expanded … #,(xl #'rest))]))
       (xl stx))
 
-
+    ;; normalize the xlist type
+    ;; The normalized form has one type followed by ^ followed by a repeat
+    ;; within braces (possibly {1}) for each position in the original type. It
+    ;; always finishes with #:rest rest-type
+    
+    (define (normalize-xlist-type stx context)
+      (define nt
+        (syntax-parser
+          #:context context
+          #:literals (^ * + - ∞)
+          [()
+           #'(#:rest Null)]
+          [rest:not-stx-pair
+           #'(#:rest rest)]
+          [(#:rest rest)
+           #'(#:rest rest)]
+          [(s:with-superscripts . rest)
+           (nt #'(s.expanded … . rest))]
+          [(:base {~or * {~^ *}} . rest)
+           #`(base ^ {*} . #,(nt #'rest))]
+          [(:base {~or + {~^ +}} . rest)
+           #`(base ^ {1 +} . #,(nt #'rest))]
+          [(:base {~^ 0 +} . rest)
+           #`(base ^ {*} . #,(nt #'rest))]
+          [(:base {~^ power:nat +} . rest)
+           #`(base ^ {power +} . #,(nt #'rest))]
+          [(:base {~optional ^} {-} . rest)
+           #`(base ^ {*} . #,(nt #'rest))]
+          [(:base ^ - . rest) ;; not with {}, check if there's stuff after
+           (nt #'(base ^ 0 - . rest))]
+          [(:base {~^ 0 - ∞} . rest)
+           #`(base ^ {*} . #,(nt #'rest))]
+          [(:base {~^ from:nat - ∞} . rest)
+           (nt #'(base ^ from + . rest))]
+          [(:base {~^ from:nat - to:nat} . rest)
+           #`(base ^ {from - to} . #,(nt #'rest))]
+          [(:base {~^ from:nat -} . rest)
+           ;; "-" is not followed by a number, nor by ∞, so default to ∞.
+           (nt #'(base ^ from - ∞ . rest))]
+          [(:base {~^ power:nat})
+           #`(base ^ {power} . #,(nt #'rest))]
+          [(:base . rest)
+           #`(base ^ {1} . #,(nt #'rest))]))
+      (nt stx))
 
 
 
@@ -232,27 +276,27 @@
       (define xl
         (syntax-parser
           #:context context
-          #:literals (^ * + - ∞ stop)
+          #:literals (^ * + - ∞)
           [()
-           #'(list)]
+           #'(#:proper-list)]
           [rest:not-stx-pair
-           #'rest]
+           #'(#:rest rest)]
+          [(#:rest ((~literal ?) (~literal null?)))
+           #'(#:proper-list)]
           [(#:rest rest)
-           #'rest]
-          [(stop . rest) ;; eliminate the private marker
-           (xl #'rest)]
+           #'(#:rest rest)]
           [(({~literal unquote-splicing} splice) …+ . rest)
-           #`(append splice … #,(xl #'rest))]
+           #`(#:rest (append splice … #,(xl #'rest)))]
           [(s:with-superscripts . rest)
            (xl #'(s.expanded … . rest))]
           [(:base {~optional ^} * . rest)
            #:with R (gensym 'R)
-           #`(list-rest-ish [] base ooo #,(xl #'rest))]
+           #`([[] base ooo] . #,(xl #'rest))]
           [(:base {~optional ^} + . rest)
            (xl #'(base ^ 1 + . rest))]
           [(:base ^ power:nat + . rest)
            #:with ..power (format-id #'power "..~a" (syntax-e #'power))
-           #`(list-rest-ish [] base ..power #,(xl #'rest))]
+           #`([[] base ..power] . #,(xl #'rest))]
           [(:base ^ - . rest)
            (xl #'(base ^ 0 - . rest))]
           [(:base ^ from:nat - ∞ . rest)
@@ -262,24 +306,34 @@
              (raise-syntax-error 'xlist
                                  "invalid range: m is larger than n"
                                  #'-))
-           #`(list-rest-ish
-              [(? (λ (_) ((between/c from to) (length occurrences))))]
-              (and occurrences base) ooo #,(xl #'rest))]
+           (define/with-syntax occurrences (gensym 'occurrences))
+           #`([[((between/c from to) (length occurrences))]
+               (and occurrences base)
+               ooo]
+              . #,(xl #'rest))]
           [(:base ^ from:nat - . rest)
            ;; "-" is not followed by a number, nor by ∞, so default to ∞.
            (xl #'(base ^ from - ∞ . rest))]
           ;; aliases
           [(:base {~or {~literal ...} {~literal ___}} . rest)
-           #`(list-rest-ish [] base ooo #,(xl #'rest))]
+           #`([[] base ooo] . #,(xl #'rest))]
           [(:base {~literal ...+} . rest)
-           #`(list-rest-ish base ..1 #,(xl #'rest))]
+           #`([[] base ..1] . #,(xl #'rest))]
           [(:base ellipsis:id . rest)
            #:when (regexp-match? #px"^\\.\\.[0-9]+$"
                                  (symbol->string (syntax-e #'ellipsis)))
-           #`(list-rest-ish [] base ellipsis #,(xl #'rest))]
-          [(e:fixed-repeat . rest)
-           #`(list-rest-ish [] e.expanded … #,(xl #'rest))]))
-      (xl stx))
+           #`([[] base ellipsis] . #,(xl #'rest))]
+          [(:base {~^ 1})
+           #`([[] base #|no ellipsis|#] . #,(xl #'rest))]
+          [(:base {~^ power:nat})
+           (define/with-syntax occurrences (gensym 'occurrences))
+           #`([[(= (length occurrences) power)]
+               (and occurrences base) ooo]
+              . #,(xl #'rest))]
+          [(:base . rest)
+           #`([[] base #|no ellipsis|#] . #,(xl #'rest))]))
+      ((λ (x) (pretty-write (syntax->datum x)) x)
+       #`(list-rest-ish . #,(xl stx))))
 
     #;("This is completely wrong"
        ;; Expands 0 or more mandatory-doms for ->*
@@ -392,19 +446,67 @@
     #:match-expander (λ (stx) ((xlist-match stx) (stx-cdr stx)))
     #;{#:call (λ (stx) ((xlist-builder stx) (stx-cdr stx)))})
 
-  (define-match-expander list-rest-ish
-    (syntax-parser
-      #:literals (list list-rest-ish)
-      #:datum-literals (list-rest)
-      [(_ [c₁ …] e₁ … (list-rest-ish [c₂ …] e₂ … r))
-       #'(list-rest-ish [c₁ … c₂ …] e₁ … e₂ … r)]
-      [(_ [c₁ …] e₁ … (list-rest e₂ … r))
-       #'(list-rest-ish [c₁ …] e₁ … e₂ … r)]
-      [(_ [c₁ …] e₁ … (list e₂ …))
-       #'(and (list e₁ … e₂ …) c₁ …)]
-      [(_ [c₁ …] e₁ … r)
-       #'(and (list-rest e₁ … r)
-              c₁ …)]))
+  (if-typed
+   (begin
+     ;(require "split-list.rkt")
+     (define-match-expander list-rest-ish
+       (λ (stx)
+         ((λ (x) (pretty-write (syntax->datum x)) x)
+          ((syntax-parser
+             #:literals (list list-rest-ish)
+             ;#:datum-literals (list-rest)
+             ;[(_ [c₁ …] e₁ … (list-rest e₂ … r))
+             ; #'(list-rest-ish [c₁ …] e₁ … e₂ … r)]
+             ;[(_ [c₁ …] e₁ … (list e₂ …))
+             ; #'(list-rest-ish [c₁ …] e₁ … e₂ …)]
+             [(_ [[c₁ …] e₁ ooo₁ …] … #:proper-list)
+              #:with whole (gensym 'whole)
+              #'TODO
+              #;#'(? (λ (whole)
+                       (match whole
+                         [(list e₁ … e₂ …) (and c₁ …)])))
+              #;#'(and (list e₁ … e₂ …) c₁ …)]
+             [(_ [[c₁ …] e₁ ooo₁ …] … #:rest r)
+              #'TODO
+              #;#'(and (list-rest e₁ … r)
+                       c₁ …)])
+           stx)))))
+   (define-match-expander list-rest-ish
+     (λ (stx)
+       ((λ (x) (pretty-write (syntax->datum x)) x)
+        ((syntax-parser
+           #:literals (list list-rest-ish)
+           ;#:datum-literals (list-rest)
+           ;[(_ [c₁ …] e₁ … (list-rest e₂ … r))
+           ; #'(list-rest-ish [c₁ …] e₁ … e₂ … r)]
+           ;[(_ [c₁ …] e₁ … (list e₂ …))
+           ; #'(list-rest-ish [c₁ …] e₁ … e₂ …)]
+           [(_ [[c₁ …] e₁ {~optional ooo₁}] … #:proper-list)
+            (define-temp-ids "~a/copy" (e₁ …))
+            ;; like below, but without the r pattern
+            (template
+             (app (λ (l)
+                    (match l
+                      [(list (?@ (and e₁ e₁/copy) (?? ooo₁)) …)
+                       #:when (and c₁ … …)
+                       (list e₁/copy …)]
+                      [_ #f]))
+                  (list (?? (list e₁ ooo₁) e₁)
+                        …)))]
+           [(_ [[c₁ …] e₁ {~optional ooo₁}] … #:rest r)
+            (define-temp-ids "~a/copy" (e₁ …))
+            (template
+             (app (λ (l)
+                    (match l
+                      [(list-rest (?@ (and e₁ e₁/copy) (?? ooo₁)) … (and the-r r))
+                       #:when (and c₁ … …)
+                       (list e₁/copy … the-r)]))
+                  (list (?? (list e₁ ooo₁) e₁)
+                        …
+                        r)))
+            #;#'(and (list-rest e₁ … r)
+                     c₁ …)])
+         stx)))))
 
   (when-typed
    (provide xList #;xListBuilder)
@@ -412,4 +514,4 @@
      ((xlist-type stx) (stx-cdr stx)))
 
    #;(define-type-expander (xListBuilder stx)
-     ((xlist-builder-type stx) (stx-cdr stx)))))
+       ((xlist-builder-type stx) (stx-cdr stx)))))

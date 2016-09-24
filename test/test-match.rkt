@@ -189,3 +189,12 @@
  (check-match   '(1 1 1 "b") [(xlist (? number? n) ^ 1 - (? string? s)) (cons n s)] '((1 1 1) . "b"))
  (check-match   '(1 1 1 "b") [(xlist (? number? n) ^ 2 - (? string? s)) (cons n s)] '((1 1 1) . "b"))
  (void))
+
+
+(test-begin
+ "More complex repetitions"
+ (check-match '(1 2 3 d e f 7 8 9)
+              [(xlist (? number? n1) * (? symbol? s) * (? number? n2) *)
+               (list n2 s n1)]
+              '((7 8 9) (d e f) (1 2 3)))
+ (void))
