@@ -60,7 +60,6 @@
 
 (define-syntax m-split-xlist*
   (λ (stx)
-    (displayln (syntax->datum stx))
     ((syntax-parser
        #:literals (^ + - * once ∞)
        [(_ v [v₁ vᵢ …] τ₁ ^ (once) {~seq τᵢ ^ *ᵢ} … #:rest r)
