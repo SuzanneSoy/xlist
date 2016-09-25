@@ -10,9 +10,12 @@
             #:link-target? #f
             #:use-sources
             [(lib "xlist/infinity-identifier.rkt")
-             (lib "xlist/caret-identifier.rkt")]]
+             (lib "xlist/caret-identifier.rkt")
+             (lib "xlist/once-identifier.rkt")]]
 
 @defidform[^]{This identifier can only be used within xlist forms.}
+
+@defidform[once]{This identifier can only be used within xlist forms.}
 
 @defidform[∞]{
  This identifier is meant to be used within xlist forms, but is also equal to

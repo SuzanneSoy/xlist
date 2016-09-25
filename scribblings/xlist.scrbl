@@ -11,6 +11,8 @@
 @title[#:style (with-html5 manual-doc-style)]{xlist}
 @author[@author+email["Georges Dupéron" "georges.duperon@gmail.com"]]
 
+@(define ddd (racket ...))
+
 @defmodule[xlist]
 
 Fancy lists, with bounded or unbounded repetition of elements. Can be used as a
@@ -23,9 +25,9 @@ To use the type expander, you must first require the
  [@defform*[#:kind "type-expander"
             [(xList τᵢ ...)
              (xList τᵢ ... . rest)
-             (xList τᵢ ... #:rest . rest)]]
+             (xList τᵢ ... #:rest rest)]]
   @defform*[#:kind "type-expander"
-            #:literals (^ *)
+            #:literals (^ * + - ∞ once)
             [(xlist τᵢ ...)
              (xlist τᵢ ... . rest)]
             #:grammar
@@ -38,22 +40,26 @@ To use the type expander, you must first require the
                             (code:line type *)
                             (code:line type +)
                             (code:line superscripted-id))
-             (repeat (code:line number)
-                     (code:line number +)
+             (repeat (code:line once)
+                     (code:line nat)
+                     (code:line nat +)
                      (code:line +)
-                     (code:line number - number)
-                     (code:line number - ∞)
-                     (code:line number -)
-                     (code:line - number)
+                     (code:line nat - nat)
+                     (code:line nat - ∞)
+                     (code:line nat -)
+                     (code:line - nat)
                      (code:line -)
                      (code:line - ∞)
-                     (code:line *))]]]]{
+                     (code:line *))]
+            #:contracts
+            [(nat (syntax/c exact-nonnegative-integer?))]]]]{
  The notation @racket[type ^ _n], where @racket[_n] is a number, indicates that
  the given type should be repeated @racket[_n] times within the list. Therefore,
  the following two types are equivalent:
  
  @racketblock[
  (xList Number ^ 3 Symbol String ^ 2)
+ 
  (List Number Number Number Symbol String String)]
 
  The notation @racket[type *] indicates that the given type may be repeated zero
@@ -61,6 +67,7 @@ To use the type expander, you must first require the
 
  @racketblock[
  (xList Number * Symbol String *)
+ 
  (Rec R1 (U (Pairof Number R1)
             (List* Symbol (Rec R2 (U (Pairof String R2)
                                      Null)))))]
@@ -70,10 +77,16 @@ To use the type expander, you must first require the
  
  @racketblock[
  (xList Number ^ {2 +} String)
+ 
  (List* Number Number (Rec R1 (U (Pairof Number R1)
                                  (List String))))]
 
  When the number preceding @racket[+] is omitted, it defaults to @racket[1].
+
+ The notation @racket[type ^ once] yields the same type as @racket[type ^ 1],
+ but other forms recognise @racket[once] and treat it specially. For example,
+ @racket[xlist-split] splits the corresponding element as a standalone value,
+ not as a list of length one.
 
  The notation @racket[type ^ _n - _m] indicates that the given type may be
  repeated between @racket[_n] (inclusive) and @racket[_m] (inclusive) times.
@@ -81,6 +94,7 @@ To use the type expander, you must first require the
  
  @racketblock[
  (xList Number ^ {2 - 5} String)
+ 
  (U (List Number Number String)
     (List Number Number Number String)
     (List Number Number Number Number String)
@@ -129,10 +143,10 @@ To use the type expander, you must first require the
 
 @defform*[#:kind "match-expander"
           #:link-target? #f
-          #:literals (^ *)
+          #:literals (^ * + - ...+ ∞)
           [(xlist patᵢ ...)
            (xlist patᵢ ... . rest)
-           (xlist patᵢ ... #:rest . rest)]
+           (xlist patᵢ ... #:rest rest)]
           #:grammar
           [(patᵢ pattern-or-spliced
                  repeated-pattern
@@ -145,33 +159,38 @@ To use the type expander, you must first require the
                              (code:line pattern-or-spliced superscripted-repeat)
                              (code:line pattern-or-spliced *)
                              (code:line pattern-or-spliced +)
-                             (code:line pattern-or-spliced ...)
-                             (code:line pattern-or-spliced ..k)
-                             (code:line pattern-or-spliced ____)
-                             (code:line pattern-or-spliced ___k)
-                             (code:line pattern-or-spliced ...+)
+                             (code:line pattern-or-spliced ooo)
                              (code:line superscripted-id))
-           (repeat (code:line number)
-                   (code:line number +)
+           (repeat (code:line once)
+                   (code:line nat)
+                   (code:line nat +)
                    (code:line +)
-                   (code:line number - number)
-                   (code:line number - ∞)
-                   (code:line number -)
-                   (code:line - number)
+                   (code:line nat - nat)
+                   (code:line nat - ∞)
+                   (code:line nat -)
+                   (code:line - nat)
                    (code:line - ∞)
                    (code:line -)
                    (code:line *)
-                   (code:line ...)
-                   (code:line ..k)
-                   (code:line ____)
-                   (code:line ___k)
-                   (code:line ...+))]]{
+                   (code:line ooo))
+           (ooo #,ddd
+                ..k
+                ____
+                ___k
+                ...+)]
+          #:contracts
+          [(nat (syntax/c exact-nonnegative-integer?))]]{
                                     
  This match expander works like the @racket[xList] type expander, but instead
  controls the repetition of match patterns. The repeated patterns are not
  literally copied, as this would likely cause errors related to duplicate
  attributes. Instead, the @racket[repeat] forms control the number of times a
  pattern may be bound, like @racket[...] does.
+
+ If the @racket[_repeat] is @racket[once], or if the pattern does not have a
+ @racket[_repeat], then the pattern is not put under ellipses, so that
+ @racket[(match '(42) [(xlist a ^ once) a])] returns @racket[42], whereas
+ @racket[(match '(42) [(xlist a ^ 1) a])] returns @racket['(42)].
 
  For convenience and compatibility with existing match patterns, the following
  equivalences are provided:
@@ -191,6 +210,7 @@ To use the type expander, you must first require the
 
  @racketblock[
  (xlist number?³⁻⁵ ,@(list-no-order number? string?) symbol?⁺)
+ 
  (append (and (list number? ...) (app length (? (between/c 3 5))))
          (list-no-order number? string?)
          (list symbol? ..1))]
@@ -203,8 +223,10 @@ To use the type expander, you must first require the
  library which would help with that (yet). This means that although by
  construction @racket[xlist] tries to avoid to generate such patterns, a few of
  the patterns supported by @racket[xlist] will not work in
- @racketmodname[typed/racket] (rest values and spliced lists are the most likely
- to cause problems).}
+ @racketmodname[typed/racket] (rest values and spliced lists are the most
+ likely to cause problems). As an alternative, try the @racket[split-xlist]
+ pattern, which produces code which should propagate type information to the
+ different sub-lists.}
 
 @;{This is completely wrong.
  @defform*[#:link-target? #f
@@ -252,21 +274,20 @@ To use the type expander, you must first require the
    (code:line type superscripted-optional-variadic-repeat)
    (code:line superscripted-optional-variadic-id)
    (code:line type *))
-  (fixed-repeat (code:line number)
+  (fixed-repeat (code:line nat)
                 (code:line from - to (code:comment "from = to")))
-  (mandatory-bounded-variadic-repeat (code:line number - number))
-  (optional-bounded-variadic-repeat (code:line 0 - number)
-                                    (code:line - number))
-  (mandatory-variadic-repeat (code:line number +)
+  (mandatory-bounded-variadic-repeat (code:line nat - nat))
+  (optional-bounded-variadic-repeat (code:line 0 - nat)
+                                    (code:line - nat))
+  (mandatory-variadic-repeat (code:line nat +)
                              (code:line +)
-                             (code:line number -)
-                             (code:line number - ∞))
+                             (code:line nat -)
+                             (code:line nat - ∞))
   (optional-variadic-repeat (code:line 0 - ∞)
                             (code:line 0 -)
                             (code:line - ∞)
                             (code:line -)
                             (code:line *))]]{
-                                    
   Macro form which returns a builder function for a list with the given type.
   The simplified syntax compared to @racket[xList] is due to the fact that there
   are some function types that Typed/Racket cannot express (yet).}
@@ -274,10 +295,12 @@ To use the type expander, you must first require the
 
 @defproc[(normalize-xlist-type [stx syntax?] [context syntax?]) syntax?]{
  Normalizes the xlist type. The normalized form has one type followed by ^
- followed by a repeat within braces (possibly {1}) for each position in the
- original type. It always finishes with #:rest rest-type. This function also
- performs a few simplifications on the type, like transforming @racket[^ {3 -}]
- into @racket[^ {3 +}], and transforming @racket[^ {0 -}] into @racket[^ {*}].}
+ followed by a repeat within braces (a @racket[type] without a repeat is
+ transformed into @racket[type ^ {once}]) for each position in the original
+ type. It always finishes with #:rest rest-type. This function also performs a
+ few simplifications on the type, like transforming @racket[^ {3 -}] into
+ @racket[^ {3 +}], and transforming @racket[^ {0 -}] into @racket[^ {*}].}
 
+@include-section{split-xlist.scrbl}
 @include-section{xlist-untyped.scrbl}
 @include-section{identifiers.scrbl}

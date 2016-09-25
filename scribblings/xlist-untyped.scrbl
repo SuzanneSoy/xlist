@@ -7,6 +7,6 @@
 @title{Untyped versions of xlist}
 @defmodule[xlist/untyped
            #:use-sources
-           [(submod (lib "xlist/main.rkt") untyped)]]
+           [(submod (lib "xlist/implementation.rkt") untyped)]]
 
 @defidform[xlist]{Untyped version of @|typed:xlist|.}
