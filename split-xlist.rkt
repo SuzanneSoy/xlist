@@ -22,15 +22,12 @@
               (List (Listof A)
                     B)))
   (define (recur l)
-    (if (null? l)
-        (list '() (ann l B))
-        (if (pred-b? l)
-            (list '() l)
-            (let ([split-rest (recur (cdr l))])
-              (cons (cons (car l)
-                          (car split-rest))
-                    (cdr split-rest)))
-            )))
+    (if (pred-b? l)
+        (list '() l)
+        (let ([split-rest (recur (cdr l))])
+          (cons (cons (car l)
+                      (car split-rest))
+                (cdr split-rest)))))
   recur)
 
 (define-syntax-rule (m-split-list v (xlist τ₁ ^ *₁ . whole-τ-rest))
@@ -41,10 +38,6 @@
     ;;       anyway.
     (make-predicate (xlist . whole-τ-rest)))
    v))
-
-#;(: cons2 (∀ (A B ...) (→ A (List B ...) (List A B ...))))
-#;(define (cons2 a b)
-    (cons a b))
 
 (define-syntax (bounded-filter stx)
   (syntax-case stx ()
