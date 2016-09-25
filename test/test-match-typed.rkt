@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(require xlist/untyped
+(require xlist
          typed/rackunit)
 
 (define-syntax-rule (check-match v clause result)

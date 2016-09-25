@@ -10,7 +10,7 @@
            "between.rkt"
            match-string
            racket/match
-           (only-in phc-toolkit/typed-untyped if-typed when-typed)
+           (only-in phc-toolkit/typed-untyped when-typed)
            (only-in syntax/parse ...+)
            (for-syntax (rename-in racket/base
                                   [* mul]
@@ -35,9 +35,6 @@
 
   (provide xlist ^ ∞ (for-syntax normalize-xlist-type))
 
-  (define-syntax stop
-    (λ (stx) (raise-syntax-error 'stop "This is a private marker" stx)))
-
   (begin-for-syntax
     (define-syntax ~^
       (pattern-expander
@@ -52,7 +49,14 @@
     (define */rx #px"^(.*?)⃰$")
     (define +/rx #px"^(.*?)([⁰¹²³⁴⁵⁶⁷⁸⁹]*)⁺$")
     (define -/rx #px"^(.*?)([⁰¹²³⁴⁵⁶⁷⁸⁹]*)⁻([⁰¹²³⁴⁵⁶⁷⁸⁹]*)$")
-    
+  
+    (define (regexp-match/c rx)
+      (and/c string? (λ (s) (regexp-match? rx s))))
+  
+    (define (id/c id)
+      (and/c identifier? (λ (i) (free-identifier=? i id))))
+
+  
     (define string-superscript-number/c (regexp-match/c number/rx))
     (define string-superscript-*/c      (regexp-match/c */rx))
     (define string-superscript-+/c      (regexp-match/c +/rx))
@@ -139,11 +143,9 @@
       (pattern {~and base {~not {~or ^ + *}}}))
 
     (define-splicing-syntax-class fixed-repeat
-      (pattern {~seq :base {~literal ^} power:nat}
+      (pattern {~seq :base {~^ power:nat}}
                #:with (expanded …) (map (const #'base)
                                         (range (syntax-e #'power))))
-      (pattern {~literal stop}
-               #:with (expanded …) #'())
       (pattern e:base
                #:with (expanded …) #'(e)))
 
@@ -169,15 +171,13 @@
       (define xl
         (syntax-parser
           #:context context
-          #:literals (^ * + - ∞ stop)
+          #:literals (^ * + - ∞)
           [()
            #'Null]
           [rest:not-stx-pair
            #'rest]
           [(#:rest rest)
            #'rest]
-          [(stop . rest) ;; eliminate the private marker
-           (xl #'rest)]
           [(s:with-superscripts . rest)
            (xl #'(s.expanded … . rest))]
           [(:base {~or * {~^ *}})
@@ -189,9 +189,11 @@
           [(:base {~or + {~^ +}} . rest)
            (xl #'(base ^ 1 + . rest))]
           [(:base {~^ power:nat +} . rest)
-           (xl #'(base ^ power stop base * . rest))]
-          [(:base {~^ -} . rest) ;; TODO: if there was ^ {-}, then it should keep the braces because the next thing may be a number
-           (xl #'(base {~^ 0 -} . rest))]
+           (xl #'(base ^ {power} base * . rest))]
+          [(:base {~optional ^} {-} . rest) ;; If it is ^ {-}, the next thing may be a number but should be used as a pattern, not a repeat
+           (xl #'(base ^ * . rest))]
+          [(:base ^ - . rest) ;; not with {}, check if there's stuff after
+           (xl #'(base ^ 0 - . rest))]
           [(:base {~^ from:nat - ∞} . rest)
            (xl #'(base ^ from + . rest))]
           [(:base {~^ 0 - to:nat} . rest)
@@ -207,7 +209,7 @@
              (raise-syntax-error 'xlist
                                  "invalid range: m is larger than n"
                                  #'-))
-           (xl #'(base ^ from stop base ^ 0 - difference . rest))]
+           (xl #'(base ^ {from} base ^ 0 - difference . rest))]
           [(:base {~^ from:nat -} . rest)
            ;; "-" is not followed by a number, nor by ∞, so default to ∞.
            (xl #'(base ^ from - ∞ . rest))]
@@ -278,68 +280,69 @@
           #:context context
           #:literals (^ * + - ∞)
           [()
-           #'(#:proper-list)]
+           #'(list)]
           [rest:not-stx-pair
-           #'(#:rest rest)]
-          [(#:rest ((~literal ?) (~literal null?)))
-           #'(#:proper-list)]
+           #'rest]
           [(#:rest rest)
-           #'(#:rest rest)]
+           #'rest]
           [(({~literal unquote-splicing} splice) …+ . rest)
-           #`(#:rest (append splice … #,(xl #'rest)))]
+           #`(append splice … #,(xl #'rest))]
           [(s:with-superscripts . rest)
            (xl #'(s.expanded … . rest))]
-          [(:base {~optional ^} * . rest)
+          [(:base {~or * {~^ *}} . rest)
            #:with R (gensym 'R)
-           #`([[] base ooo] . #,(xl #'rest))]
-          [(:base {~optional ^} + . rest)
+           #`(list-rest-ish [] base ooo #,(xl #'rest))]
+          [(:base {~or + {~^ +}} . rest)
            (xl #'(base ^ 1 + . rest))]
-          [(:base ^ power:nat + . rest)
+          [(:base {~^ power:nat +} . rest)
            #:with ..power (format-id #'power "..~a" (syntax-e #'power))
-           #`([[] base ..power] . #,(xl #'rest))]
-          [(:base ^ - . rest)
+           #`(list-rest-ish [] base ..power #,(xl #'rest))]
+          [(:base {~optional ^} {-} . rest) ;; If it is ^ {-}, the next thing may be a number but should be used as a pattern, not a repeat
+           (xl #'(base ^ {*} . rest))]
+          [(:base ^ - . rest) ;; not with {}, check if there's stuff after
            (xl #'(base ^ 0 - . rest))]
-          [(:base ^ from:nat - ∞ . rest)
-           (xl #'(base ^ from + . rest))]
-          [(:base ^ from:nat - to:nat . rest)
+          [(:base {~^ from:nat - ∞} . rest)
+           (xl #'(base ^ {from +} . rest))]
+          [(:base {~^ from:nat - to:nat} . rest)
+           #:with occurrences (gensym 'occurrences)
            (when (> (syntax-e #'from) (syntax-e #'to))
              (raise-syntax-error 'xlist
                                  "invalid range: m is larger than n"
                                  #'-))
-           (define/with-syntax occurrences (gensym 'occurrences))
-           #`([[((between/c from to) (length occurrences))]
-               (and occurrences base)
-               ooo]
-              . #,(xl #'rest))]
-          [(:base ^ from:nat - . rest)
+           #`(list-rest-ish
+              [(? (λ (_) ((between/c from to) (length occurrences))))]
+              (and occurrences base) ooo
+              #,(xl #'rest))]
+          [(:base {~^ from:nat -} . rest)
            ;; "-" is not followed by a number, nor by ∞, so default to ∞.
-           (xl #'(base ^ from - ∞ . rest))]
+           (xl #'(base ^ {from - ∞} . rest))]
           ;; aliases
-          [(:base {~or {~literal ...} {~literal ___}} . rest)
-           #`([[] base ooo] . #,(xl #'rest))]
-          [(:base {~literal ...+} . rest)
-           #`([[] base ..1] . #,(xl #'rest))]
-          [(:base ellipsis:id . rest)
+          [(:base {~or {~literal ...} {~literal ___}
+                       {~^ {~literal ...}} {~^ {~literal ___}}}
+             . rest)
+           #`(list-rest-ish [] base ooo #,(xl #'rest))]
+          [(:base {~or {~literal ...+} {~^ {~literal ...+}}} . rest)
+           #`(list-rest-ish base ..1 #,(xl #'rest))]
+          [(:base {~or ellipsis:id {~^ ellipsis:id}} . rest)
            #:when (regexp-match? #px"^\\.\\.[0-9]+$"
                                  (symbol->string (syntax-e #'ellipsis)))
-           #`([[] base ellipsis] . #,(xl #'rest))]
+           #`(list-rest-ish [] base ellipsis #,(xl #'rest))]
           [(:base {~^ 1})
-           #`([[] base #|no ellipsis|#] . #,(xl #'rest))]
+           #`(list-rest-ish [] base #|no ellipsis|# . #,(xl #'rest))]
           [(:base {~^ power:nat})
-           (define/with-syntax occurrences (gensym 'occurrences))
-           #`([[(= (length occurrences) power)]
-               (and occurrences base) ooo]
-              . #,(xl #'rest))]
+           #:with occurrences (gensym 'occurrences)
+           #`(list-rest-ish [(? (λ (_) (= (length occurrences) power)))]
+               (and occurrences base) ooo
+               #,(xl #'rest))]
           [(:base . rest)
-           #`([[] base #|no ellipsis|#] . #,(xl #'rest))]))
-      ((λ (x) (pretty-write (syntax->datum x)) x)
-       #`(list-rest-ish . #,(xl stx))))
+           #`(list-rest-ish [] base #|no ellipsis|# #,(xl #'rest))]))
+      (xl stx))
 
     #;("This is completely wrong"
        ;; Expands 0 or more mandatory-doms for ->*
        (define-splicing-syntax-class fixed-repeated-type
          #:attributes ([mandatory 1])
-         #:literals (^ * + - ∞ stop)
+         #:literals (^ * + - ∞)
          (pattern {~seq :base {~^ power:nat}}
                   #:with (mandatory …) (map (const #'base)
                                             (range (syntax-e #'power))))
@@ -360,7 +363,7 @@
        ;; for ->*
        (define-splicing-syntax-class mandatory-bounded-variadic-repeated-type
          #:attributes ([mandatory 1] [optional 1])
-         #:literals (^ * + - ∞ stop)
+         #:literals (^ * + - ∞)
          (pattern {~seq :base {~^ {~and from:nat {~not 0}} - to:nat}}
                   #:with (mandatory …) (map (const #'base)
                                             (range (syntax-e #'from)))
@@ -374,7 +377,7 @@
        ;; Expands to 1 or more optional-doms for ->*
        (define-splicing-syntax-class optional-bounded-variadic-repeated-type
          #:attributes ([optional 1])
-         #:literals (^ * + - ∞ stop)
+         #:literals (^ * + - ∞)
          (pattern {~seq :base {~^ {~optional 0} - to:nat}}
                   #:with (optional …) (map (const #'base)
                                            (range (syntax-e #'to))))
@@ -400,7 +403,7 @@
        ;; Expands to a #:rest clause for ->*
        (define-splicing-syntax-class optional-variadic-repeated-type
          #:attributes ([rest-clause 1])
-         #:literals (^ * + - ∞ stop)
+         #:literals (^ * + - ∞)
          (pattern {~or {~seq :base {~^ {~optional 0} - {~optional ∞}}}
                        {~seq :base {~^ *}}
                        {~seq :base *}}
@@ -413,7 +416,7 @@
          ;; The order of clauses is important, as they otherwise overlap.
          (syntax-parse stx
            #:context context
-           #:literals (^ * + - ∞ stop)
+           #:literals (^ * + - ∞)
            [(τᵢ:fixed-repeated-type
              …
              (~or (~seq τₘᵥ:mandatory-variadic-repeated-type)
@@ -446,67 +449,22 @@
     #:match-expander (λ (stx) ((xlist-match stx) (stx-cdr stx)))
     #;{#:call (λ (stx) ((xlist-builder stx) (stx-cdr stx)))})
 
-  (if-typed
-   (begin
-     ;(require "split-list.rkt")
-     (define-match-expander list-rest-ish
-       (λ (stx)
-         ((λ (x) (pretty-write (syntax->datum x)) x)
-          ((syntax-parser
-             #:literals (list list-rest-ish)
-             ;#:datum-literals (list-rest)
-             ;[(_ [c₁ …] e₁ … (list-rest e₂ … r))
-             ; #'(list-rest-ish [c₁ …] e₁ … e₂ … r)]
-             ;[(_ [c₁ …] e₁ … (list e₂ …))
-             ; #'(list-rest-ish [c₁ …] e₁ … e₂ …)]
-             [(_ [[c₁ …] e₁ ooo₁ …] … #:proper-list)
-              #:with whole (gensym 'whole)
-              #'TODO
-              #;#'(? (λ (whole)
-                       (match whole
-                         [(list e₁ … e₂ …) (and c₁ …)])))
-              #;#'(and (list e₁ … e₂ …) c₁ …)]
-             [(_ [[c₁ …] e₁ ooo₁ …] … #:rest r)
-              #'TODO
-              #;#'(and (list-rest e₁ … r)
-                       c₁ …)])
-           stx)))))
-   (define-match-expander list-rest-ish
-     (λ (stx)
-       ((λ (x) (pretty-write (syntax->datum x)) x)
-        ((syntax-parser
-           #:literals (list list-rest-ish)
-           ;#:datum-literals (list-rest)
-           ;[(_ [c₁ …] e₁ … (list-rest e₂ … r))
-           ; #'(list-rest-ish [c₁ …] e₁ … e₂ … r)]
-           ;[(_ [c₁ …] e₁ … (list e₂ …))
-           ; #'(list-rest-ish [c₁ …] e₁ … e₂ …)]
-           [(_ [[c₁ …] e₁ {~optional ooo₁}] … #:proper-list)
-            (define-temp-ids "~a/copy" (e₁ …))
-            ;; like below, but without the r pattern
-            (template
-             (app (λ (l)
-                    (match l
-                      [(list (?@ (and e₁ e₁/copy) (?? ooo₁)) …)
-                       #:when (and c₁ … …)
-                       (list e₁/copy …)]
-                      [_ #f]))
-                  (list (?? (list e₁ ooo₁) e₁)
-                        …)))]
-           [(_ [[c₁ …] e₁ {~optional ooo₁}] … #:rest r)
-            (define-temp-ids "~a/copy" (e₁ …))
-            (template
-             (app (λ (l)
-                    (match l
-                      [(list-rest (?@ (and e₁ e₁/copy) (?? ooo₁)) … (and the-r r))
-                       #:when (and c₁ … …)
-                       (list e₁/copy … the-r)]))
-                  (list (?? (list e₁ ooo₁) e₁)
-                        …
-                        r)))
-            #;#'(and (list-rest e₁ … r)
-                     c₁ …)])
-         stx)))))
+  (define-match-expander list-rest-ish
+    (λ (stx)
+      ((λ (x) (pretty-write (syntax->datum x)) x)
+       ((syntax-parser
+          #:literals (list list-rest-ish)
+          #:datum-literals (list-rest)
+          [(_ [c₁ …] e₁ … (list-rest-ish [c₂ …] e₂ … r))
+           #'(list-rest-ish [c₁ … c₂ …] e₁ … e₂ … r)]
+          [(_ [c₁ …] e₁ … (list-rest e₂ … r))
+           #'(list-rest-ish [c₁ …] e₁ … e₂ … r)]
+          [(_ [c₁ …] e₁ … (list e₂ …))
+           #'(and (list e₁ … e₂ …) c₁ …)]
+          [(_ [c₁ …] e₁ … r)
+           #'(and (list-rest e₁ … r)
+                  c₁ …)])
+        stx))))
 
   (when-typed
    (provide xList #;xListBuilder)
