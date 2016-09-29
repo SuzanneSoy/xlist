@@ -264,10 +264,8 @@
            (nt #'(base ^ from - ∞ . rest))]
           [(:base {~^ power:nat} . rest)
            #`(base ^ {power} . #,(nt #'rest))]
-          [(:base {~^ once} . rest)
-           #`(base ^ {once} . #,(nt #'rest))]
-          [(:base . rest)
-             #`(base ^ {once} . #,(nt #'rest))]))
+          [(:base {~optional {~^ once}} . rest)
+           #`(base ^ {once} . #,(nt #'rest))]))
       (nt stx))
 
 
@@ -286,7 +284,7 @@
       (define xl
         (syntax-parser
           #:context context
-          #:literals (^ * + - ∞)
+          #:literals (^ * + - ∞ once)
           [()
            #'(list)]
           [rest:not-stx-pair
@@ -335,8 +333,8 @@
            #:when (regexp-match? #px"^\\.\\.[0-9]+$"
                                  (symbol->string (syntax-e #'ellipsis)))
            #`(list-rest-ish [] base ellipsis #,(xl #'rest))]
-          [(:base {~^ once})
-           #`(list-rest-ish [] base #|no ellipsis|# . #,(xl #'rest))]
+          [(:base {~^ once} . rest)
+           #`(list-rest-ish [] base #|no ellipsis|# #,(xl #'rest))]
           [(:base {~^ power:nat})
            #:with occurrences (gensym 'occurrences)
            #`(list-rest-ish [(? (λ (_) (= (length occurrences) power)))]

@@ -1,10 +1,14 @@
 #lang scribble/manual
 @require[phc-toolkit/scribblings/utils
+         scribble/examples
          @for-label[xlist
                     typed/racket/base]]
 
 @title{Splitting an xlist in its constituent sublists}
 @(declare-exporting xlist)
+
+@(define make-eval (make-eval-factory '(xlist)
+                                      #:lang 'typed/racket))
 
 @defform*[#:kind "match-expander"
           #:literals (^ * + - ∞)
@@ -52,4 +56,13 @@
    equivalent, the type of the sublist will be @racket[(xList type ^ _n)]}
  @item{If the @racket[_repeat] for that element is @racket[_from - _to] or an
    equivalent, the type of the sublist will be
-   @racket[(xList type ^ _from - _to)]}]}
+   @racket[(xList type ^ _from - _to)]}
+ @item{The @racket[#:rest] or dotted rest is included as the last element of
+   the list matched against @racket[pat]. If the first form without a rest type
+   is used, the list matched against @racket[pat] still contains @racket['()] as
+   a last element:
+   @examples[#:eval (make-eval)
+             (match '(1 2 3)
+               [(split-xlist (list (list a) (list b c) (? null?))
+                             Number¹ Number⃰)
+                (vector c b a)])]}]}

@@ -198,3 +198,11 @@
                (list n2 s n1)]
               '((7 8 9) (d e f) (1 2 3)))
  (void))
+
+(test-begin
+ "{once}, {1} and a simple pattern variable"
+ (check-match '(a a a a a a a a)
+              [(xlist a1 ^ {once} a2 ^ {1} a3 a4 ^ *)
+               (list a4 a3 a2 a1)]
+              '((a a a a a) a (a) a))
+ (void))
