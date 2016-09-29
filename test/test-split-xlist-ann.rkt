@@ -136,7 +136,7 @@
                : (List Fixnum String Null)
                '(1 "flob" ()))
 
-(check-equal?: (match (ann (list 1 "flob") Any)
+(check-equal?: (match (list 1 "flob")
                  [(and (? (make-predicate (xlist Fixnum String)))
                        (split-xlist whole Fixnum String)) whole])
                : (List One String Null)

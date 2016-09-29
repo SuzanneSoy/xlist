@@ -285,8 +285,6 @@
         (syntax-parser
           #:context context
           #:literals (^ * + - ∞ once)
-          [({~do (displayln this-syntax)} #:oops-nope)
-           #'trbgfdsctgbrfvdc]
           [()
            #'(list)]
           [rest:not-stx-pair
