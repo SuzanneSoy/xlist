@@ -285,6 +285,8 @@
         (syntax-parser
           #:context context
           #:literals (^ * + - ∞ once)
+          [({~do (displayln this-syntax)} #:oops-nope)
+           #'trbgfdsctgbrfvdc]
           [()
            #'(list)]
           [rest:not-stx-pair
@@ -335,7 +337,7 @@
            #`(list-rest-ish [] base ellipsis #,(xl #'rest))]
           [(:base {~^ once} . rest)
            #`(list-rest-ish [] base #|no ellipsis|# #,(xl #'rest))]
-          [(:base {~^ power:nat})
+          [(:base {~^ power:nat} . rest)
            #:with occurrences (gensym 'occurrences)
            #`(list-rest-ish [(? (λ (_) (= (length occurrences) power)))]
                             (and occurrences base) ooo
