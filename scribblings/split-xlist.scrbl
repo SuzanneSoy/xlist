@@ -7,7 +7,7 @@
 @title{Splitting an xlist in its constituent sublists}
 @(declare-exporting xlist)
 
-@(define make-eval (make-eval-factory '(xlist)
+@(define make-eval (make-eval-factory '(xlist type-expander)
                                       #:lang 'typed/racket))
 
 @defform*[#:kind "match-expander"
