@@ -65,4 +65,24 @@
              (match '(1 2 3)
                [(split-xlist (list (list a) (list b c) (? null?))
                              Number¹ Number⃰)
-                (vector c b a)])]}]}
+                (vector c b a)])]}]
+
+ Note that @racket[split-xlist] assumes the value it is matched against has
+ the type @racket[(xlist τᵢ ... maybe-rest)], but does not apply
+ @racket[(? (make-predicate (xlist τᵢ ... maybe-rest)))] to the value itself.
+ The rationale is that the @racket[make-predicate] may fail at compile-time if
+ it cannot generate a contract for the given type. In some cases, however
+ @racket[split-xlist] will still manage to successfully generate the match
+ pattern, and can be used on its own, provided that the value is statically
+ known to be of the right type.
+
+ It is therefore recommended to use @racket[split-xlist] as follows when the
+ type of the value is not known to be acceptable by @racket[split-xlist]:
+
+ @examples[#:eval (make-eval)
+           (define v : Any '(1 2 3))
+           (match '(1 2 3)
+             [(and (? (make-predicate (xlist Number¹ Number⃰)))
+                   (split-xlist (list (list a) (list b c) (? null?))
+                                Number¹ Number⃰))
+              'success])]}
