@@ -5,7 +5,6 @@
          type-expander
          "../split-xlist.rkt")
 
-
 (check-equal?:
  (((inst f-split-list Number (Listof Symbol))
    (make-predicate (Listof Symbol))) (ann '(1 2 3 a b)
@@ -130,3 +129,15 @@
                                         (List Number)
                                         (List Number Number))))
  '(() (7 8 9) (d e f g) (1 2 3 4)))
+
+(check-equal?: (match (ann (list 1 "flob") Any)
+                 [(and (? (make-predicate (xlist Fixnum String)))
+                       (split-xlist whole Fixnum String)) whole])
+               : (List Fixnum String Null)
+               '(1 "flob" ()))
+
+(check-equal?: (match (ann (list 1 "flob") Any)
+                 [(and (? (make-predicate (xlist Fixnum String)))
+                       (split-xlist whole Fixnum String)) whole])
+               : (List One String Null)
+               '(1 "flob" ()))
