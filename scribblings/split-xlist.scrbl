@@ -38,10 +38,9 @@
                    (code:line *))]
           #:contracts
           [(nat (syntax/c exact-nonnegative-integer?))]]{
-                                                           
- This match patterns splits an xlist into a list of lists, and matches the
+ This match pattern splits an xlist into a list of lists, and matches the
  result against @racket[pat]. Each repeated element of the xlist is extracted
- into one of these sublists. The type for each sublist is determined base on
+ into one of these sublists. The type for each sublist is determined based on
  the element's type and its @racket[_repeat]:
  @itemlist[
  @item{If the @racket[_repeat] for that element is @racket[once], then the
