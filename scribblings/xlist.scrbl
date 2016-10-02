@@ -29,7 +29,8 @@ To use the type expander, you must first require the
   @defform*[#:kind "type-expander"
             #:literals (^ * + - ∞ once)
             [(xlist τᵢ ...)
-             (xlist τᵢ ... . rest)]
+             (xlist τᵢ ... . rest)
+             (xlist τᵢ ... #:rest rest)]
             #:grammar
             [(τᵢ type
                  repeated-type)

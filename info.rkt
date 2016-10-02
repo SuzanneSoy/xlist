@@ -15,7 +15,9 @@
                      "racket-doc"
                      "typed-racket-doc"
                      "scribble-math"))
-(define scribblings '(("scribblings/xlist.scrbl" ())))
-(define pkg-desc "Description Here")
-(define version "0.0")
+(define scribblings '(("scribblings/xlist.scrbl" () ("Data Structures"))))
+(define pkg-desc
+  (string-append "Fancy lists, with bounded or unbounded repetition of"
+                 " elements. Can be used as a type or match pattern."))
+(define version "0.9")
 (define pkg-authors '(georges))
