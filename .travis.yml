@@ -49,7 +49,7 @@ before_script:
 # `raco pkg install --deps search-auto` to install any required
 # packages without it getting stuck on a confirmation prompt.
 script:
- - raco test -x -p xlist
+ - raco test -p xlist
  - raco setup --check-pkg-deps --pkgs xlist
  - raco pkg install --deps search-auto doc-coverage
  #- raco doc-coverage xlist # Needs scribble patch for issue 44
