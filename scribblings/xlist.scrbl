@@ -121,7 +121,7 @@ To use the type expander, you must first require the
  @item{@racket[+] and @racket[-] are replaced by their unicode superscripted
    counterparts, respectively @elem[#:style 'tt "⁺"] and @elem[#:style 'tt "⁻"]}
  @item{@racket[*] is replaced by the unicode character ``COMBINING ASTERISK
-   ABOVE'' @racket[ ⃰] (code point U+20F0)}
+   ABOVE'' @tt{ ⃰} (code point U+20F0)}
  @item{@racket[∞] is always omitted, as @racket[_n - ∞] and @racket[- ∞] are
    equivalent to @racket[_n -] and @racket[0 -]}]
                                     
@@ -131,7 +131,7 @@ To use the type expander, you must first require the
  @racket[superscripted-repeat] can be coalesced into a single identifier.
    
  The identifier @racket[String³] is equivalent to the notations
- @racket[String ³] (with a space between the identifier and the @racket[ ⃰]) and
+ @racket[String ³] (with a space between the identifier and the @racket[³]) and
  @racket[String ^ 3].
 
  Similarly, the identifier @racket[String⃰] is equivalent to the notations

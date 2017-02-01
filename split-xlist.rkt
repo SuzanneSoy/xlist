@@ -17,7 +17,7 @@
                             (→ (Rec R (U (Pairof A R) B))
                                (List (Listof A)
                                      B)))))
-(define (f-split-list  pred-b?)
+(define (f-split-list pred-b?)
   (: recur (→ (Rec R (U (Pairof A R) B))
               (List (Listof A)
                     B)))
