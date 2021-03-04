@@ -9,7 +9,7 @@
                     match-string]]
 
 @title[#:style (with-html5 manual-doc-style)]{xlist}
-@author[@author+email["Georges Dupéron" "georges.duperon@gmail.com"]]
+@author[@author+email["Suzanne Soy" "racket@suzanne.soy"]]
 
 @(define ddd (racket ...))
 
