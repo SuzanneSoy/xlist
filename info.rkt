@@ -20,4 +20,4 @@
   (string-append "Fancy lists, with bounded or unbounded repetition of"
                  " elements. Can be used as a type or match pattern."))
 (define version "0.9")
-(define pkg-authors '(georges))
+(define pkg-authors '(|Suzanne Soy|))
